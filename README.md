@@ -315,6 +315,7 @@ No real patient information is used.
 The project uses a structured approach to identify where AI and automation could be useful in hospital processes.
 
 The process is represented as:
+```text
 
 Current Activity
        ↓
@@ -327,7 +328,7 @@ Future Activity
 Human / AI Responsibility
        ↓
 Expected Benefit
-
+```
 For healthcare-related activities, the final decision remains with the appropriate hospital staff where required.
 
 ## Limitations
