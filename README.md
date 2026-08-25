@@ -1,157 +1,374 @@
 # AI Future Process Designer
-### Industry: Healthcare — Hospital Operations
 
-An application that **researches and models how AI/automation could transform hospital
-processes**, storing every step of the reasoning chain as structured, queryable data —
-not paragraphs.
+## Overview
 
-```
-Current Process → Activities → Problems → AI Opportunities → Future Process
-   → Human vs AI Responsibility → Expected Benefit
-```
+AI Future Process Designer is a web application that shows how AI and automation can be used to improve hospital processes.
 
----
+For this project, I focused on hospital operations and looked at how common activities can be improved using AI while keeping important decisions with hospital staff.
 
-## 1. Why this design is strong for an interview
+The application breaks a hospital process into smaller steps and shows:
 
-| Requirement | How it's satisfied |
-|---|---|
-| Reasoning chain (Current→...→Benefit) | Modeled as **7 relational tables**, not text blobs |
-| Structured, queryable | Every entity has its own table + FK relations; `GET /processes/{id}/reasoning-chain` returns the whole chain as nested JSON built from live SQL joins |
-| CURRENT → TRANSITION → FUTURE comparison | `transformations` table explicitly maps old activity → new activity with a `transformation_type` (automated / augmented / eliminated / new / unchanged) — rendered as a side-by-side table in the UI |
-| Multiple processes / scalable | 4 hospital processes modeled (2 fully deep, 2 lighter to prove extensibility); schema is industry-agnostic — swap the seed data for banking, retail, manufacturing, etc. |
-| Human vs AI responsibility | Every future activity has an `automation_level` (human/ai/hybrid) and an owning `role`; the UI shows the live split |
-| Expected benefit | `benefits` table stores measurable before/after metrics (time, cost, quality, compliance, experience) with computed improvement % |
+**Current Process → Problems → AI Opportunities → Future Process → Benefits**
+
+The information is stored in a structured database so that each part of the process can be viewed and compared separately.
+
+This project is a prototype created using sample healthcare process data. It is not connected to a real hospital system and is not intended for clinical decision-making.
 
 ---
 
-## 2. Architecture
+## Technology Stack
 
-```
-┌─────────────────────┐        REST/JSON        ┌──────────────────────────┐
-│   Frontend (SPA)     │ ◄──────────────────────► │   FastAPI backend         │
-│   index.html          │                          │   SQLAlchemy ORM          │
-│   vanilla JS + CSS    │                          │   SQLite (app.db)         │
-└─────────────────────┘                          └──────────────────────────┘
-```
+### Frontend
+- HTML
+- CSS
+- JavaScript
 
-**Data model (backend/models.py):**
+### Backend
+- Python
+- FastAPI
+- SQLAlchemy
 
-```
-Industry ──< Process ──< Activity ──< Problem ──< AIOpportunity
-                  │                                     │
-                  ├──< FutureActivity  ◄─────────────────┘  (ai_opportunity_id FK)
-                  ├──< Transformation  (current_activity_id + future_activity_id)
-                  └──< Benefit
+### Database
+- SQLite
 
-Role  (human | ai | hybrid)  — referenced by Activity & FutureActivity
-System (legacy_it | ai_platform | integration) — referenced by Activity & FutureActivity
-```
-
-This is a real relational schema — every box above is a SQL table with foreign keys,
-so you can slice the data any way an interviewer asks on the spot (e.g. "show me every
-activity an AI now fully owns" is one query away).
+### API Documentation
+- FastAPI Swagger / OpenAPI
 
 ---
 
-## 3. Full API route list
+## Features
 
-Base URL: `http://localhost:8000`
-
-| Method | Route | Purpose |
-|---|---|---|
-| GET | `/` | API info |
-| GET | `/docs` | Auto-generated Swagger UI (try every route live) |
-| GET | `/industries` | List industries with nested processes |
-| GET | `/processes` | List all processes |
-| GET | `/processes/{id}` | Single process detail |
-| GET | `/processes/{id}/activities` | Current-state activities (+ nested problems + AI opportunities) |
-| GET | `/processes/{id}/problems` | All problems for a process |
-| GET | `/processes/{id}/ai-opportunities` | All AI opportunities for a process |
-| GET | `/processes/{id}/future-activities` | Redesigned future-state activities |
-| GET | `/processes/{id}/transformations` | Current↔future activity mapping |
-| GET | `/processes/{id}/benefits` | Before/after measurable benefits |
-| **GET** | **`/processes/{id}/reasoning-chain`** | **The full chain in one nested JSON payload — the core deliverable** |
-| GET | `/processes/{id}/compare` | CURRENT → TRANSITION → FUTURE table, row-per-activity |
-| POST | `/processes/{id}/activities` | Add a new current-state activity |
-| POST | `/activities/{id}/problems` | Attach a problem to an activity |
-| POST | `/problems/{id}/ai-opportunities` | Attach an AI opportunity to a problem |
-
+- View hospital processes
+- Break processes into individual activities
+- Identify problems in the current process
+- Map problems to possible AI opportunities
+- Compare current and future activities
+- Show human, AI and hybrid responsibilities
+- View expected process improvements
+- Access the backend through REST APIs
+- Explore and test APIs through FastAPI Swagger documentation
 ---
 
-## 4. Run it locally (5 minutes)
+## Project Design
+
+The project follows the complete process from the current situation to the expected result:
+
+**Current Process → Activities → Problems → AI Opportunities → Future Process → Responsibility → Benefits**
+
+Each part is stored separately in the database. This makes the information easier to update, compare, and query.
+
+### Current and Future Process
+
+The application keeps the current activities and future activities separate. A transformation record connects them and shows what happened to each activity.
+
+An activity can be:
+
+* Automated
+* Improved with AI
+* Removed
+* Newly added
+* Kept unchanged
+
+### Human and AI Responsibility
+
+Each future activity has a responsibility level:
+
+* **Human** — handled by hospital staff
+* **AI** — handled by the system
+* **Hybrid** — AI assists, but a person makes the final decision
+
+This is especially important for healthcare because important decisions should remain with qualified staff.
+
+### Expected Benefits
+
+The project stores before-and-after values for areas such as:
+
+* Time
+* Cost
+* Quality
+* Compliance
+* Patient experience
+
+The application can then show the expected change instead of only describing the benefit in words.
+
+## Architecture
+
+The application has three main parts:
+
+```text
+┌─────────────────────────┐
+│       Frontend          │
+│      HTML / CSS / JS    │
+└────────────┬────────────┘
+             │
+          REST API
+             │
+             ▼
+┌─────────────────────────┐
+│       FastAPI           │
+│   Backend / API Logic   │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│        SQLite           │
+│        Database         │
+└─────────────────────────┘
+```
+
+The frontend is used to view and compare the processes. The FastAPI backend handles the requests and retrieves the required information. SQLite stores the project data.
+
+### Data Model
+
+The main relationships in the database are:
+
+```text
+Industry
+   │
+   └── Process
+         │
+         ├── Activity
+         │     └── Problem
+         │           └── AI Opportunity
+         │
+         ├── Future Activity
+         │
+         ├── Transformation
+         │
+         └── Benefit
+
+Role ─────────── Activity / Future Activity
+
+System ───────── Activity / Future Activity
+```
+
+The database uses separate tables and relationships instead of keeping the complete process as one large text field. This allows individual activities, problems, AI opportunities, future activities, and benefits to be accessed separately.
+
+
+## API
+
+Base URL:
+
+```text
+http://localhost:8000
+```
+
+### Main Routes
+
+| Method | Route                               | Purpose                                 |
+| ------ | ----------------------------------- | --------------------------------------- |
+| GET    | `/`                                 | Check that the API is running           |
+| GET    | `/docs`                             | Open the FastAPI documentation          |
+| GET    | `/industries`                       | View available industries and processes |
+| GET    | `/processes`                        | View all hospital processes             |
+| GET    | `/processes/{id}`                   | View one process                        |
+| GET    | `/processes/{id}/activities`        | View current activities                 |
+| GET    | `/processes/{id}/problems`          | View problems in a process              |
+| GET    | `/processes/{id}/ai-opportunities`  | View possible AI solutions              |
+| GET    | `/processes/{id}/future-activities` | View the future process                 |
+| GET    | `/processes/{id}/transformations`   | Compare current and future activities   |
+| GET    | `/processes/{id}/benefits`          | View expected benefits                  |
+| GET    | `/processes/{id}/reasoning-chain`   | View the complete process chain         |
+| GET    | `/processes/{id}/compare`           | View the current-to-future comparison   |
+| POST   | `/processes/{id}/activities`        | Add a current activity                  |
+| POST   | `/activities/{id}/problems`         | Add a problem to an activity            |
+| POST   | `/problems/{id}/ai-opportunities`   | Add an AI opportunity                   |
+
+The `/docs` page is provided by FastAPI and can be used to test the API endpoints.
+
+## Running the Project Locally
+
+### 1. Start the Backend
+
+Open a terminal and go to the backend folder:
 
 ```bash
-# Backend
 cd backend
-python3 -m venv venv && source venv/bin/activate   # optional but recommended
-pip install -r requirements.txt
-python3 seed.py          # populates app.db with the healthcare data set
-uvicorn main:app --reload --port 8000
-
-# Frontend (new terminal)
-cd frontend
-python3 -m http.server 8080
 ```
 
-Open **http://localhost:8080** in your browser. The frontend calls the API at
-`http://localhost:8000` by default (edit the `API_BASE` constant at the top of
-`index.html`'s `<script>` if you deploy the backend elsewhere).
+Install the required packages:
 
-Swagger docs: **http://localhost:8000/docs**
+```bash
+pip install -r requirements.txt
+```
 
----
+Create the sample database:
 
-## 5. Getting a public link (deploy in ~20 minutes)
+```bash
+python seed.py
+```
 
-You need two free hosts — one for the API, one for the static frontend.
+Start the API:
 
-**Backend → Render.com (free tier)**
-1. Push this folder to a GitHub repo.
-2. On Render: New → Web Service → connect the repo, root directory `backend`.
-3. Build command: `pip install -r requirements.txt`
-4. Start command: `python3 seed.py && uvicorn main:app --host 0.0.0.0 --port $PORT`
-5. Deploy → copy the generated URL (e.g. `https://ai-fpd-api.onrender.com`).
+```bash
+uvicorn main:app --reload --port 8000
+```
 
-**Frontend → Netlify / Vercel / GitHub Pages**
-1. In `frontend/index.html`, set `window.API_BASE = "https://ai-fpd-api.onrender.com"`
-   (add a `<script>window.API_BASE="...";</script>` line before the main script tag).
-2. Drag-and-drop the `frontend` folder onto Netlify Drop (netlify.com/drop) — instant URL.
-   Or `vercel deploy` / push to a `gh-pages` branch.
+The backend will be available at:
 
-You'll have a real public link within the same 24 hours — both platforms deploy in minutes.
+```text
+http://localhost:8000
+```
 
----
+FastAPI documentation:
 
-## 6. 24-Hour Roadmap (what to actually do, in order)
+```text
+http://localhost:8000/docs
+```
 
-| Hours | Task |
-|---|---|
-| 0–1 | Pick industry + 2–4 processes; sketch the entity list (Activity, Problem, AIOpportunity, FutureActivity, Role, System, Transformation, Benefit) |
-| 1–3 | Build the schema (`models.py`) and DB setup — get `create_all()` running |
-| 3–7 | Write `seed.py` — this is where the real "research" happens: for each process, list real activities, real pain points, plausible AI techniques (NLP, CV, GenAI, RPA, predictive ML, agentic AI), and realistic before/after metrics |
-| 7–10 | Build FastAPI routes, test everything in `/docs` before touching the frontend |
-| 10–16 | Build the frontend: reasoning-chain timeline view, then the CURRENT→TRANSITION→FUTURE table, then the benefits cards |
-| 16–19 | Polish UI (dark theme, pills/badges, responsive grid), fix edge cases (null systems, "new" activities with no current counterpart) |
-| 19–21 | Deploy backend (Render) + frontend (Netlify) for a public link |
-| 21–23 | Write the README, prepare a 2-minute walkthrough narrative, rehearse answering "how would you extend this to a new industry?" |
-| 23–24 | Buffer / bug fixes |
+### 2. Start the Frontend
 
-**Realistic total effort:** a solo builder comfortable with FastAPI + vanilla JS can do
-this in **14–18 focused hours**; 24 hours gives you comfortable buffer for deployment
-and polish. The schema design (hour 1–3) is the highest-leverage hour — get it right
-and everything downstream (seed data, API, UI) falls into place quickly.
+Open another terminal and go to the frontend folder:
 
----
+```bash
+cd frontend
+```
 
-## 7. Talking points for the interview
+Start the local server:
 
-- "The future process isn't generated text — it's rows in a `future_activities` table,
-  each with an explicit `automation_level` and an owning `role`, so I can query
-  'what does the AI now own end-to-end?' directly."
-- "The `transformations` table is the CURRENT→FUTURE bridge — it's what lets me render
-  the three-column comparison and also answer 'what got eliminated vs. just augmented?'"
-- "Benefits are stored as before/after numbers with a computed improvement %, not
-  claims in prose — so they can be aggregated, charted, or exported."
-- "The schema is industry-agnostic. To add banking or retail, I only touch `seed.py`
-  — models, API, and frontend are unchanged."
+```bash
+python -m http.server 8080
+```
+
+Open the application at:
+
+```text
+http://localhost:8080
+```
+
+## Deployment
+
+The application is deployed on Render for demonstration purposes.
+
+Live application:
+
+https://ai-future-process-designer-2.onrender.com/
+
+The backend uses FastAPI and the frontend communicates with it through REST API requests.
+
+### Backend
+
+The backend can be hosted on a service such as Render.
+
+The backend needs:
+
+* Python
+* FastAPI
+* SQLAlchemy
+* SQLite
+
+The start command is:
+
+```bash
+python seed.py && uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+
+### Frontend
+
+The frontend contains static HTML, CSS and JavaScript files, so it can be hosted on services such as Netlify, Vercel or GitHub Pages.
+
+After deploying the backend, the frontend API address needs to be updated to the deployed backend URL.
+
+
+## Project Structure
+
+```text
+AI_Healthcare_Project/
+│
+├── backend/
+│   ├── database.py
+│   ├── main.py
+│   ├── models.py
+│   ├── seed.py
+│   └── requirements.txt
+│
+├── frontend/
+│   └── index.html
+│
+└── README.md
+```
+
+
+## Data Used
+
+The project uses sample hospital process data.
+
+The data includes information about:
+
+* Hospital processes
+* Current activities
+* Problems
+* AI opportunities
+* Future activities
+* Human and AI responsibilities
+* Systems used
+* Expected benefits
+* Current-to-future transformations
+
+The data is stored locally in SQLite.
+
+No real patient information is used.
+
+
+## AI Approach
+
+The project uses a structured approach to identify where AI and automation could be useful in hospital processes.
+
+The process is represented as:
+
+Current Activity
+       ↓
+Problem
+       ↓
+AI Opportunity
+       ↓
+Future Activity
+       ↓
+Human / AI Responsibility
+       ↓
+Expected Benefit
+
+For healthcare-related activities, the final decision remains with the appropriate hospital staff where required.
+
+## Limitations
+
+This is a prototype and has some limitations:
+
+* The project uses sample data.
+* It is not connected to a real hospital system.
+* The expected benefits are estimates.
+* There is no real patient data.
+* Authentication and user management are not included.
+* The project does not make clinical decisions.
+
+## Future Improvements
+
+If the project were developed further, I would add:
+
+* User authentication
+* More hospital processes
+* More detailed reporting
+* Charts for process improvements
+* Audit logs
+* Integration with hospital systems
+* Better monitoring and error reporting
+* More detailed evaluation of AI opportunities
+
+## Conclusion
+
+The project demonstrates how a hospital process can be broken down into smaller activities, problems and possible AI improvements.
+
+The main focus is on making the reasoning structured and easy to understand rather than keeping it as large blocks of text.
+
+The same approach could later be used for other industries by changing the process data and business rules.
+
+
+## Project Links
+
+**Live Application:**  
+https://ai-future-process-designer-2.onrender.com/
+
+**GitHub Repository:**  
+https://github.com/Aparna1506/AI-Future-Process-Designer
+
+
